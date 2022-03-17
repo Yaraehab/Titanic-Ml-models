@@ -1,0 +1,89 @@
+import numpy as np 
+import pandas as pd
+
+import os
+for dirname, _, filenames in os.walk('/kaggle/input'):
+    for filename in filenames:
+        print(os.path.join(dirname, filename))
+        
+ Train_Data = pd.read_csv('/kaggle/input/titanic/train.csv')
+ 
+ Train_Data.info()
+ 
+ # check for nulls in data
+Train_Data.isna().any().any()
+
+# know percentage of nulls in each column
+100*Train_Data.isna().sum() / len(Train_Data)
+
+Train_Data_Update= Train_Data.drop(labels='Cabin', axis=1)
+Train_Data_Update
+
+# check for outliers in age column by using boxplot
+import seaborn as sns
+sns.boxplot(Train_Data_Update.Age)
+
+# fill nulls in age column by using median
+Train_Data_Update['Age'].fillna(Train_Data_Update['Age'].median(), inplace=True)\
+
+# fill nulls in embarked column by using mode because this column have categorical data
+Train_Data_Update['Embarked']= Train_Data_Update['Embarked'].fillna(Train_Data_Update['Embarked'].mode().iloc[0])
+
+#check for duplicates 
+Train_Data_Update.duplicated().sum()
+
+# know percenatge of survived people in Titanic
+p=sns.countplot(x="Survived", data=Train_Data_Update)
+p.bar_label(p.containers[0])
+
+p=sns.countplot(x="Survived",hue='Sex', data=Train_Data_Update)
+for container in p.containers:
+    p.bar_label(container)
+   
+
+# encoding sex column for ml model
+import pandas as pd
+from sklearn.tree import DecisionTreeClassifier 
+from sklearn.model_selection import train_test_split 
+from sklearn import metrics
+
+Feature_Columns=['Sex']
+X = Train_Data_Update[Feature_Columns]
+y= Train_Data_Update['Survived']
+
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=1)
+
+from sklearn.preprocessing import LabelEncoder
+marry_encoder = LabelEncoder()
+marry_encoder.fit(X_train['Sex'])
+X_train['Sex']= marry_encoder.transform(X_train['Sex'])
+X_test['Sex']= marry_encoder.transform(X_test['Sex'])
+
+#check for encoding
+X_train['Sex']
+
+
+DTCL = DecisionTreeClassifier()
+DTCL = DTCL.fit(X_train,y_train)
+y_pred = DTCL.predict(X_test)
+
+# accuracy of decision tree model
+print("Accuracy:",metrics.accuracy_score(y_test, y_pred)*100)
+
+
+--------------------------------------------------------------
+# Logestic Model
+
+from sklearn.linear_model import LogisticRegression
+logreg = LogisticRegression()
+logreg.fit(X_train,y_train)
+
+y_pred=logreg.predict(X_test)
+
+
+from sklearn import metrics
+cnf_matrix = metrics.confusion_matrix(y_test, y_pred)
+cnf_matrix
+
+print("Accuracy:",metrics.accuracy_score(y_test, y_pred)*100)
+
